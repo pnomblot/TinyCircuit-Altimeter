@@ -12,7 +12,7 @@ Adafruit_BMP280 bmp;
 
 // SD Card 
 #define SD_chipSelect 10
-#define SD_FileName "alti2.csv"
+#define SD_FileName "alti.csv"
 
 
 // Altimeter settings
@@ -25,12 +25,15 @@ int screen=-1;
 unsigned long loopTick;
 unsigned int loopDuration = 1000;
 unsigned char clignote; 
+#define time_setting_tick 300
 
 void display_Altitude(double altitude);              // Print Altitude on tinyScreen
 void display_Temperature(double temperature);        // Print temperature on tinyScreen
 void display_Time(void);                             // Print temperature on tinyScreen
 void store_data(double altitude, double temperature, char * filename); // Store Altitude and temperature on SD CARD
-
+void display_Battery(int batteryLevel);
+void draw_Battery(int batteryLevel);
+int read_Battery(void);
 
 
 
@@ -72,12 +75,11 @@ void setup()
     display.fontColor(TS_8b_Red,TS_8b_Black);
     display.setCursor(1,40);
     display.print("NO SD CARD ! ");
-    delay(3000);
   } else {
     SerialUSB.println("SD CARD OK !");
   }
 
-  setTime(0, 0, 0, 16, 2, 2016);
+//  setTime(0, 0, 0, 16, 2, 2016);
   SerialUSB.println("Starting");
   loopTick =  millis();
 
@@ -107,13 +109,24 @@ void loop()
   loopTick =  millis();
   ++clignote;
 
+    #define STATE_DISPLAY_ALTITUDE 0
+    #define STATE_DISPLAY_TEMPERATURE 1
+    #define STATE_DISPLAY_BATTERY 2
+    #define STATE_DISPLAY_TIME 3
+    #define STATE_SETTING_HOUR 4
+    #define STATE_SETTING_MINUTE 5
+    #define STATE_SETTING_SECOND 6
+    #define STATE_SETTING_DAY 7
+    #define STATE_SETTING_MONTH 8
+    #define STATE_SETTING_YEAR 9
+
+
+
   switch (screen) {
     case -1: // Startup
       display.clearScreen(); 
 //      display.drawBitmap(0, 0, Splash, 128, 64, WHITE);
 //      display.display();
-
-
     display.setFont(  liberationSans_12ptFontInfo  );   
     display.fontColor(TS_8b_White,TS_8b_Black);
     display.setCursor(0,0);
@@ -124,51 +137,85 @@ void loop()
   
     break;
 
-    case 0: // Altitude
+    case STATE_DISPLAY_ALTITUDE:
       display_Altitude(bmp.readAltitude(P0));
       store_data(bmp.readAltitude(P0), bmp.readTemperature(), SD_FileName);
+      draw_Battery(read_Battery());
       loopDuration = 1000;
     break;
 
-    case 1: // Temperature
+    case STATE_DISPLAY_TEMPERATURE:
       display_Temperature(bmp.readTemperature());
+      draw_Battery(read_Battery());
       loopDuration = 1000;
     break;
 
-    case 2: // Time
+    case STATE_DISPLAY_BATTERY:
+      display_Battery(read_Battery()); 
+      draw_Battery(read_Battery());
+      loopDuration = 1000;
+    break;
+
+    case STATE_DISPLAY_TIME:
       display_Time();
+      draw_Battery(read_Battery());
       loopDuration = 1000;
     break;
 
 
-    #define SETTING_HOUR 3
-    case 3: // Hour setting 
+    case STATE_SETTING_HOUR:
       tmp=hour();
       if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%24;
       if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%24;
       setTime(tmp, minute(), second(), day(), month(), year());
       display_Time();
-      loopDuration = 500;
+      loopDuration = time_setting_tick;
     break;
 
-    #define SETTING_MINUTE 4
-    case 4: // Minute setting 
+    case STATE_SETTING_MINUTE:
       tmp=minute();
       if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%60;
       if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%60;
       setTime(hour(), tmp, second(), day(), month(), year());
       display_Time();
-      loopDuration = 500;
+      loopDuration = time_setting_tick;
     break;
 
-    #define SETTING_SECOND 5
-    case 5: // Second setting 
+    case STATE_SETTING_SECOND:
       tmp=second();
       if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%60;
       if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%60;
       setTime(hour(), minute(), tmp, day(), month(), year());
       display_Time();
-      loopDuration = 500;
+      loopDuration = time_setting_tick;
+    break;
+
+    case STATE_SETTING_DAY:
+      tmp=day();
+      if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%31;
+      if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%31;
+      setTime(hour(), minute(), second(), tmp, month(), year());
+      display_Time();
+      loopDuration = time_setting_tick;
+    break;
+
+    case STATE_SETTING_MONTH:
+      tmp=month();
+      if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%12;
+      if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%12;
+      setTime(hour(), minute(), second(), day(), tmp, year());
+      display_Time();
+      loopDuration = time_setting_tick;
+    break;
+
+
+    case STATE_SETTING_YEAR:
+      tmp=year();
+      if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%2100;
+      if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%2100;
+      setTime(hour(), minute(), second(), day(), month(), tmp);
+      display_Time();
+      loopDuration = time_setting_tick;
     break;
 
     default:
@@ -187,13 +234,10 @@ void loop()
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Altitude(double altitude) {
    display.clearScreen();
-   display.setFont(liberationSans_12ptFontInfo);   
+   display.setFont(liberationSans_10ptFontInfo);   
    display.fontColor(TS_8b_White,TS_8b_Black);
-   display.setCursor(44,0);
+   display.setCursor(28,0);
    display.print(String(altitude));
-   display.setFont(thinPixel7_10ptFontInfo);
-   display.setCursor(90,6);
-   display.print("m");
  
    // store Altitude value in rotating buffer
    rotatingBuffer[rotatingBufferIndex] = int(altitude);
@@ -235,15 +279,14 @@ void display_Altitude(double altitude) {
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Temperature(double temperature) {
    display.clearScreen();
-   display.setFont(  liberationSans_12ptFontInfo  );   
+   display.setFont(liberationSansNarrow_12ptFontInfo);   
    display.fontColor(TS_8b_White,TS_8b_Black);
-   display.setCursor(44,0);
+   display.setCursor(10,20);
    display.print(String(temperature));
-   display.setFont(thinPixel7_10ptFontInfo);
-   display.setCursor(90,6);
-   display.print("c");
-   display.drawRect(88,6,2,2,TSRectangleNoFill,TS_8b_White);
+   display.print(" c");
+   display.drawRect(40,20,2,2,TSRectangleNoFill,TS_8b_White);
 }
+
 
 
 
@@ -254,25 +297,48 @@ void display_Time() {
     display.clearScreen();
     display.setFont(  liberationSans_12ptFontInfo  );   
     display.fontColor(TS_8b_White,TS_8b_Black);
+    display.setCursor(0,30);
+
+
+    if ((clignote%2) && (screen == STATE_SETTING_DAY))  display.fontColor(TS_8b_Black, TS_8b_White);
+    sprintf(buffer, "%02d", day());
+    display.print(buffer);
+
+    display.fontColor(TS_8b_White,TS_8b_Black);
+    display.print("/");
+
+    if ((clignote%2) && (screen == STATE_SETTING_MONTH))  display.fontColor(TS_8b_Black, TS_8b_White);
+    sprintf(buffer, "%02d", month());
+    display.print(buffer);
+
+    display.fontColor(TS_8b_White,TS_8b_Black);
+    display.print("/");
+
+    if ((clignote%2) && (screen == STATE_SETTING_YEAR))  display.fontColor(TS_8b_Black, TS_8b_White);
+    sprintf(buffer, "%02d", year());
+    display.print(buffer);
+
+    display.fontColor(TS_8b_White,TS_8b_Black);
     display.setCursor(0,0);
 
-    if ((clignote%2) && (screen == SETTING_HOUR))  display.fontColor(TS_8b_Black, TS_8b_White);
+    if ((clignote%2) && (screen == STATE_SETTING_HOUR))  display.fontColor(TS_8b_Black, TS_8b_White);
     sprintf(buffer, "%02d", hour());
     display.print(buffer);
 
     display.fontColor(TS_8b_White,TS_8b_Black);
     display.print(':');
 
-    if ((clignote%2) && (screen == SETTING_MINUTE))  display.fontColor(TS_8b_Black, TS_8b_White);
+    if ((clignote%2) && (screen == STATE_SETTING_MINUTE))  display.fontColor(TS_8b_Black, TS_8b_White);
     sprintf(buffer, "%02d", minute());
     display.print(buffer);
 
     display.fontColor(TS_8b_White,TS_8b_Black);
     display.print(':');
 
-    if ((clignote%2) && (screen == SETTING_SECOND))  display.fontColor(TS_8b_Black, TS_8b_White);
+    if ((clignote%2) && (screen == STATE_SETTING_SECOND))  display.fontColor(TS_8b_Black, TS_8b_White);
     sprintf(buffer, "%02d", second());
     display.print(buffer);
+    display.fontColor(TS_8b_White,TS_8b_Black);
 }
 
 
@@ -293,3 +359,69 @@ void store_data(double altitude, double temperature, char * filename) {
 }
 
 
+
+//--------------------------------------------------------------------------------------------------------------------------------
+void display_Battery(int batteryLevel) {
+   display.clearScreen();
+   display.setFont(liberationSansNarrow_12ptFontInfo);   
+   display.fontColor(TS_8b_White,TS_8b_Black);
+   display.setCursor(10,20);
+   display.print(String((float(batteryLevel)/100)));
+   display.print(" V");
+}
+
+
+//--------------------------------------------------------------------------------------------------------------------------------
+void draw_Battery(int batteryLevel) {
+  uint8_t x = 70;
+  uint8_t y = 3;
+  uint8_t height = 5;
+  uint8_t length = 20;
+  uint8_t red, green;
+  if (batteryLevel > 325) {
+    red = 0;
+    green = 63;
+  } else {
+    red = 63;
+    green = 0;
+  }
+  display.drawLine(x - 1, y, x - 1, y + height, 0xFF); //left boarder
+  display.drawLine(x - 1, y - 1, x + length, y - 1, 0xFF); //top border
+  display.drawLine(x - 1, y + height + 1, x + length, y + height + 1, 0xFF); //bottom border
+  display.drawLine(x + length, y - 1, x + length, y + height + 1, 0xFF); //right border
+  display.drawLine(x + length + 1, y + 2, x + length + 1, y + height - 2, 0xFF); //right border
+  for (uint8_t i = 0; i < length; i++) {
+    display.drawLine(x + i, y, x + i, y + height, red, green, 0);
+  } 
+}
+
+
+//--------------------------------------------------------------------------------------------------------------------------------
+int read_Battery(void) {
+  int result = 0;
+
+  SYSCTRL->VREF.reg |= SYSCTRL_VREF_BGOUTEN;while (ADC->STATUS.bit.SYNCBUSY == 1);
+  ADC->SAMPCTRL.bit.SAMPLEN = 0x1;
+  while (ADC->STATUS.bit.SYNCBUSY == 1);
+  ADC->INPUTCTRL.bit.MUXPOS = 0x19;         // Internal bandgap input
+  while (ADC->STATUS.bit.SYNCBUSY == 1);
+  ADC->CTRLA.bit.ENABLE = 0x01;             // Enable ADC
+  // Start conversion
+  while (ADC->STATUS.bit.SYNCBUSY == 1);
+  ADC->SWTRIG.bit.START = 1;
+  // Clear the Data Ready flag
+  ADC->INTFLAG.bit.RESRDY = 1;
+  // Start conversion again, since The first conversion after the reference is changed must not be used.
+  while (ADC->STATUS.bit.SYNCBUSY == 1);
+  ADC->SWTRIG.bit.START = 1;
+  // Store the value
+  while ( ADC->INTFLAG.bit.RESRDY == 0 );   // Waiting for conversion to complete
+  uint32_t valueRead = ADC->RESULT.reg;
+  while (ADC->STATUS.bit.SYNCBUSY == 1);
+  ADC->CTRLA.bit.ENABLE = 0x00;             // Disable ADC
+  while (ADC->STATUS.bit.SYNCBUSY == 1);
+  SYSCTRL->VREF.reg &= ~SYSCTRL_VREF_BGOUTEN;
+  result = (((1100L * 1024L) / valueRead) + 5L) / 10L;
+  SerialUSB.println(result);
+  return(result);
+}
