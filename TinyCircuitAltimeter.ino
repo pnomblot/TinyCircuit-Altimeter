@@ -87,6 +87,7 @@ void setup()
 //--------------------------------------------------------------------------------------------------------------------------------
 void loop()
 {
+  unsigned int tmp;
   
   while ( ( millis() - loopTick ) < loopDuration ) {
     delay(1);
@@ -141,11 +142,31 @@ void loop()
 
 
     #define SETTING_HOUR 3
+    case 3: // Hour setting 
+      tmp=hour();
+      if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%24;
+      if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%24;
+      setTime(tmp, minute(), second(), day(), month(), year());
+      display_Time();
+      loopDuration = 500;
+    break;
+
     #define SETTING_MINUTE 4
+    case 4: // Minute setting 
+      tmp=minute();
+      if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%60;
+      if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%60;
+      setTime(hour(), tmp, second(), day(), month(), year());
+      display_Time();
+      loopDuration = 500;
+    break;
+
     #define SETTING_SECOND 5
-    case 3: // Time
-    case 4: // Time
-    case 5: // Time
+    case 5: // Second setting 
+      tmp=second();
+      if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%60;
+      if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%60;
+      setTime(hour(), minute(), tmp, day(), month(), year());
       display_Time();
       loopDuration = 500;
     break;
