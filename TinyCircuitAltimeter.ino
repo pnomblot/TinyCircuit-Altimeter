@@ -5,9 +5,6 @@
 #include <TinyScreen.h>
 TinyScreen display = TinyScreen(TinyScreenPlus);
 #include "Arial.h"
-//#include "YaHei.h"
-//#include "TrebuchetBold.h"
-//#include "Tahoma.h"
 
 // BMP280 definitions
 Adafruit_BMP280 bmp; 
@@ -22,6 +19,13 @@ Adafruit_BMP280 bmp;
 #define XMAX  96
 #define YMAX  64
 
+
+// BATTERY LEVEL 
+#define BAT_X_POS  82
+#define BAT_Y_POS   1
+#define BAT_HEIGHT  4
+#define BAT_LENGTH  9
+
 int rotatingBuffer[XMAX];
 unsigned char rotatingBufferIndex=0 ;
 int screen=-1;
@@ -35,12 +39,6 @@ unsigned char clignote;
 #define MAX_DAY  31
 #define MAX_MONTH 12
 #define MAX_YEAR  2100
-
-// BATTERY LEVEL 
-#define BAT_X_POS  82
-#define BAT_Y_POS   1
-#define BAT_HEIGHT  3
-#define BAT_LENGTH  9
 
 
 void display_Altitude(double altitude);              // Print Altitude on tinyScreen
@@ -276,7 +274,7 @@ void display_Altitude(double altitude) {
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Temperature(double temperature) {
    display.clearScreen();
-   display.setFont(arial_20ptFontInfo);   
+   display.setFont(arial_20ptFontInfo);  
    display.fontColor(TS_8b_White,TS_8b_Black);
    display.setCursor(10,20);
    display.print(String(temperature)+" °c");
@@ -372,13 +370,14 @@ void display_Battery(int batteryLevel) {
    display.fontColor(TS_8b_White,TS_8b_Black);
    display.setCursor(10,20);
    display.print(String((float(batteryLevel)/100)));
-   display.print(" V");
+   display.print(" v");
 }
 
 
 //--------------------------------------------------------------------------------------------------------------------------------
 void draw_Battery(int batteryLevel) {
     
+  display.drawRect(BAT_X_POS+BAT_LENGTH, BAT_Y_POS+1, 2, 2, TSRectangleFilled,TS_8b_White);
   display.drawRect(BAT_X_POS-1 , BAT_Y_POS-1, BAT_LENGTH+2, BAT_HEIGHT+2, TSRectangleNoFill,TS_8b_White);
   if (batteryLevel > 326) {
     display.drawRect(BAT_X_POS , BAT_Y_POS, BAT_LENGTH, BAT_HEIGHT, TSRectangleFilled,TS_8b_Green);
