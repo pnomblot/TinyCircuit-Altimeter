@@ -32,7 +32,13 @@ unsigned char clignote;
 #define MAX_DAY  31
 #define MAX_MONTH 12
 #define MAX_YEAR  2100
-  
+
+// BATTERY LEVEL 
+#define BAT_X_POS  82
+#define BAT_Y_POS   1
+#define BAT_HEIGHT  3
+#define BAT_LENGTH  9
+
 
 void display_Altitude(double altitude);              // Print Altitude on tinyScreen
 void display_Temperature(double temperature);        // Print temperature on tinyScreen
@@ -222,7 +228,7 @@ void loop()
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Altitude(double altitude) {
    display.clearScreen();
-   display.setFont(liberationSans_10ptFontInfo);   
+   display.setFont(liberationSans_12ptFontInfo);   
    display.fontColor(TS_8b_White,TS_8b_Black);
    display.setCursor(28,0);
    display.print(String(altitude));
@@ -370,26 +376,13 @@ void display_Battery(int batteryLevel) {
 
 //--------------------------------------------------------------------------------------------------------------------------------
 void draw_Battery(int batteryLevel) {
-  uint8_t x = 70;
-  uint8_t y = 3;
-  uint8_t height = 5;
-  uint8_t length = 20;
-  uint8_t red, green;
-  if (batteryLevel > 325) {
-    red = 0;
-    green = 63;
+    
+  display.drawRect(BAT_X_POS-1 , BAT_Y_POS-1, BAT_LENGTH+2, BAT_HEIGHT+2, TSRectangleNoFill,TS_8b_White);
+  if (batteryLevel > 326) {
+    display.drawRect(BAT_X_POS , BAT_Y_POS, BAT_LENGTH, BAT_HEIGHT, TSRectangleFilled,TS_8b_Green);
   } else {
-    red = 63;
-    green = 0;
+    display.drawRect(BAT_X_POS , BAT_Y_POS, BAT_LENGTH, BAT_HEIGHT, TSRectangleFilled,TS_8b_Red);
   }
-  display.drawLine(x - 1, y, x - 1, y + height, 0xFF); //left boarder
-  display.drawLine(x - 1, y - 1, x + length, y - 1, 0xFF); //top border
-  display.drawLine(x - 1, y + height + 1, x + length, y + height + 1, 0xFF); //bottom border
-  display.drawLine(x + length, y - 1, x + length, y + height + 1, 0xFF); //right border
-  display.drawLine(x + length + 1, y + 2, x + length + 1, y + height - 2, 0xFF); //right border
-  for (uint8_t i = 0; i < length; i++) {
-    display.drawLine(x + i, y, x + i, y + height, red, green, 0);
-  } 
 }
 
 
