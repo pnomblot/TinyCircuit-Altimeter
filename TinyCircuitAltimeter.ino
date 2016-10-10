@@ -25,7 +25,14 @@ int screen=-1;
 unsigned long loopTick;
 unsigned int loopDuration = 1000;
 unsigned char clignote; 
-#define time_setting_tick 300
+#define time_setting_tick 150
+#define MAX_SECOND  60
+#define MAX_MINUTE 60
+#define MAX_HOUR  24
+#define MAX_DAY  31
+#define MAX_MONTH 12
+#define MAX_YEAR  2100
+  
 
 void display_Altitude(double altitude);              // Print Altitude on tinyScreen
 void display_Temperature(double temperature);        // Print temperature on tinyScreen
@@ -34,7 +41,7 @@ void store_data(double altitude, double temperature, char * filename); // Store 
 void display_Battery(int batteryLevel);
 void draw_Battery(int batteryLevel);
 int read_Battery(void);
-
+unsigned updown(unsigned int val, unsigned int max);
 
 
 
@@ -89,7 +96,6 @@ void setup()
 //--------------------------------------------------------------------------------------------------------------------------------
 void loop()
 {
-  unsigned int tmp;
   
   while ( ( millis() - loopTick ) < loopDuration ) {
     delay(1);
@@ -164,56 +170,38 @@ void loop()
 
 
     case STATE_SETTING_HOUR:
-      tmp=hour();
-      if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%24;
-      if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%24;
-      setTime(tmp, minute(), second(), day(), month(), year());
+      setTime(updown(hour(), MAX_HOUR), minute(), second(), day(), month(), year());
       display_Time();
       loopDuration = time_setting_tick;
     break;
 
     case STATE_SETTING_MINUTE:
-      tmp=minute();
-      if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%60;
-      if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%60;
-      setTime(hour(), tmp, second(), day(), month(), year());
+      setTime(hour(), updown(minute(), MAX_MINUTE), second(), day(), month(), year());
       display_Time();
       loopDuration = time_setting_tick;
     break;
 
     case STATE_SETTING_SECOND:
-      tmp=second();
-      if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%60;
-      if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%60;
-      setTime(hour(), minute(), tmp, day(), month(), year());
+      setTime(hour(), minute(), updown(second(), MAX_SECOND), day(), month(), year());
       display_Time();
       loopDuration = time_setting_tick;
     break;
 
     case STATE_SETTING_DAY:
-      tmp=day();
-      if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%31;
-      if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%31;
-      setTime(hour(), minute(), second(), tmp, month(), year());
+      setTime(hour(), minute(), second(), updown(day(), MAX_DAY), month(), year());
       display_Time();
       loopDuration = time_setting_tick;
     break;
 
     case STATE_SETTING_MONTH:
-      tmp=month();
-      if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%12;
-      if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%12;
-      setTime(hour(), minute(), second(), day(), tmp, year());
+      setTime(hour(), minute(), second(), day(), updown(month(), MAX_MONTH), year());
       display_Time();
       loopDuration = time_setting_tick;
     break;
 
 
     case STATE_SETTING_YEAR:
-      tmp=year();
-      if(display.getButtons(TSButtonUpperLeft)) tmp = (tmp+1)%2100;
-      if(display.getButtons(TSButtonLowerLeft)) tmp = (tmp-1)%2100;
-      setTime(hour(), minute(), second(), day(), month(), tmp);
+      setTime(hour(), minute(), second(), day(), month(), updown(year(), MAX_YEAR));
       display_Time();
       loopDuration = time_setting_tick;
     break;
@@ -339,6 +327,15 @@ void display_Time() {
     sprintf(buffer, "%02d", second());
     display.print(buffer);
     display.fontColor(TS_8b_White,TS_8b_Black);
+}
+
+
+//--------------------------------------------------------------------------------------------------------------------------------
+unsigned int updown(unsigned int val, unsigned int max) {
+  if(display.getButtons(TSButtonUpperLeft)) val = (val+1)%max;
+  if(display.getButtons(TSButtonLowerLeft)) val--;
+  if (val<0) val = max-1;
+  return (val);
 }
 
 
