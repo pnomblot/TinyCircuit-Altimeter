@@ -2,9 +2,12 @@
 #include <Adafruit_BMP280.h>
 #include <SD.h>
 #include <TimeLib.h>
-
 #include <TinyScreen.h>
 TinyScreen display = TinyScreen(TinyScreenPlus);
+#include "Arial.h"
+//#include "YaHei.h"
+//#include "TrebuchetBold.h"
+//#include "Tahoma.h"
 
 // BMP280 definitions
 Adafruit_BMP280 bmp; 
@@ -139,7 +142,7 @@ void loop()
       display.clearScreen(); 
 //      display.drawBitmap(0, 0, Splash, 128, 64, WHITE);
 //      display.display();
-    display.setFont(  liberationSans_12ptFontInfo  );   
+    display.setFont(  arial_20ptFontInfo  );   
     display.fontColor(TS_8b_White,TS_8b_Black);
     display.setCursor(0,0);
     display.print("Patrick");
@@ -251,7 +254,7 @@ void display_Altitude(double altitude) {
    if ( coef>1) coef=1;
 
    // Print current lower Y value
-   display.setFont(thinPixel7_10ptFontInfo);
+   display.setFont(arial_6ptFontInfo);
    display.fontColor(TS_8b_Blue,TS_8b_Black);
    display.setCursor(0,52);
    display.print(Ymin);
@@ -273,13 +276,12 @@ void display_Altitude(double altitude) {
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Temperature(double temperature) {
    display.clearScreen();
-   display.setFont(liberationSansNarrow_12ptFontInfo);   
+   display.setFont(arial_20ptFontInfo);   
    display.fontColor(TS_8b_White,TS_8b_Black);
    display.setCursor(10,20);
-   display.print(String(temperature));
-   display.print(" c");
-   display.drawRect(40,20,2,2,TSRectangleNoFill,TS_8b_White);
+   display.print(String(temperature)+" °c");
 }
+   
 
 
 
@@ -366,7 +368,7 @@ void store_data(double altitude, double temperature, char * filename) {
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Battery(int batteryLevel) {
    display.clearScreen();
-   display.setFont(liberationSansNarrow_12ptFontInfo);   
+   display.setFont(arial_20ptFontInfo);   
    display.fontColor(TS_8b_White,TS_8b_Black);
    display.setCursor(10,20);
    display.print(String((float(batteryLevel)/100)));
