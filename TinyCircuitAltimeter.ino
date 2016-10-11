@@ -29,6 +29,7 @@ Adafruit_BMP280 bmp;
 int rotatingBuffer[XMAX];
 unsigned char rotatingBufferIndex=0 ;
 int screen=-1;
+int brightness=10;
 unsigned long loopTick;
 unsigned int loopDuration = 1000;
 unsigned char clignote; 
@@ -61,11 +62,11 @@ void setup()
 
   Wire.begin();
   display.begin();
-  display.setBrightness(10);
+  display.setBrightness(brightness);
 
   display.setFlip(true);
   display.clearScreen();
-  display.setFont(thinPixel7_10ptFontInfo);
+  display.setFont(arial_10ptFontInfo);   
   display.fontColor(TS_8b_Blue,TS_8b_Black);
 
   if(!bmp.begin()){
@@ -77,9 +78,8 @@ void setup()
   }
 
   // Initialize curve values
-  int A = (int)bmp.readAltitude(P0);
   for (int i=0; i<XMAX; i++) { 
-     rotatingBuffer[i] = A;
+     rotatingBuffer[i] = (int)bmp.readAltitude(P0);
   }
 
   //while (!Serial); // Wait for USB Serial to be ready 
@@ -106,11 +106,26 @@ void loop()
   
   while ( ( millis() - loopTick ) < loopDuration ) {
     delay(1);
+    if (display.getButtons(TSButtonLowerLeft)) {
+      if (brightness>0) brightness--;
+      display.setBrightness(brightness);
+      delay(500);
+      break;
+    }  
+    
+    if (display.getButtons(TSButtonUpperLeft)) {
+      if (brightness<16) brightness++;
+      display.setBrightness(brightness);
+      delay(500);
+      break;
+    }  
+
     if (display.getButtons(TSButtonLowerRight)) {
       screen--;
       while(display.getButtons(TSButtonLowerRight));
       break;
     }  
+    
     if (display.getButtons(TSButtonUpperRight)) {
       screen++;
       while(display.getButtons(TSButtonUpperRight));
@@ -122,38 +137,37 @@ void loop()
   loopTick =  millis();
   ++clignote;
 
-    #define STATE_DISPLAY_ALTITUDE 0
-    #define STATE_DISPLAY_TEMPERATURE 1
-    #define STATE_DISPLAY_BATTERY 2
-    #define STATE_DISPLAY_TIME 3
-    #define STATE_SETTING_HOUR 4
-    #define STATE_SETTING_MINUTE 5
-    #define STATE_SETTING_SECOND 6
-    #define STATE_SETTING_DAY 7
-    #define STATE_SETTING_MONTH 8
-    #define STATE_SETTING_YEAR 9
+  #define STATE_DISPLAY_ALTITUDE 0
+  #define STATE_DISPLAY_TEMPERATURE 1
+  #define STATE_DISPLAY_BATTERY 2
+  #define STATE_DISPLAY_TIME 3
+  #define STATE_SETTING_HOUR 4
+  #define STATE_SETTING_MINUTE 5
+  #define STATE_SETTING_SECOND 6
+  #define STATE_SETTING_DAY 7
+  #define STATE_SETTING_MONTH 8
+  #define STATE_SETTING_YEAR 9
 
 
+  display.clearScreen(); 
 
   switch (screen) {
     case -1: // Startup
-      display.clearScreen(); 
 //      display.drawBitmap(0, 0, Splash, 128, 64, WHITE);
 //      display.display();
-    display.setFont(  arial_20ptFontInfo  );   
-    display.fontColor(TS_8b_White,TS_8b_Black);
-    display.setCursor(0,0);
-    display.print("Patrick");
-
-     ++screen;
-     loopDuration = 1000;
+      display.setFont(arial_20ptFontInfo);   
+      display.fontColor(TS_8b_White,TS_8b_Black);
+      display.setCursor(0,0);
+      display.print("Patrick");
+      ++screen;
+      loopDuration = 1000;
   
     break;
 
     case STATE_DISPLAY_ALTITUDE:
+      draw_Battery(read_Battery());
       display_Altitude(bmp.readAltitude(P0));
       store_data(bmp.readAltitude(P0), bmp.readTemperature(), SD_FileName);
-      draw_Battery(read_Battery());
       loopDuration = 1000;
     break;
 
@@ -228,7 +242,6 @@ void loop()
 
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Altitude(double altitude) {
-   display.clearScreen();
    display.setFont(liberationSans_12ptFontInfo);   
    display.fontColor(TS_8b_White,TS_8b_Black);
    display.setCursor(28,0);
@@ -273,7 +286,6 @@ void display_Altitude(double altitude) {
 
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Temperature(double temperature) {
-   display.clearScreen();
    display.setFont(arial_20ptFontInfo);  
    display.fontColor(TS_8b_White,TS_8b_Black);
    display.setCursor(10,20);
@@ -288,7 +300,6 @@ void display_Temperature(double temperature) {
 void display_Time() {
     char buffer[3];
 
-    display.clearScreen();
     display.setFont(  liberationSans_12ptFontInfo  );   
     display.fontColor(TS_8b_White,TS_8b_Black);
     display.setCursor(0,30);
