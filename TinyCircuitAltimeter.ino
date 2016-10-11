@@ -4,7 +4,7 @@
 #include <TimeLib.h>
 #include <TinyScreen.h>
 TinyScreen display = TinyScreen(TinyScreenPlus);
-#include "Arial.h"
+#include "monofonto.h"
 
 // BMP280 definitions
 Adafruit_BMP280 bmp; 
@@ -67,7 +67,7 @@ void setup()
 
   display.setFlip(true);
   display.clearScreen();
-  display.setFont(arial_10ptFontInfo);   
+  display.setFont(monofonto_10ptFontInfo);   
   display.fontColor(TS_8b_Blue,TS_8b_Black);
 
   if(!bmp.begin()){
@@ -142,7 +142,7 @@ void loop()
     case -1: // Startup
 //      display.drawBitmap(0, 0, Splash, 128, 64, WHITE);
 //      display.display();
-      display.setFont(arial_20ptFontInfo);   
+      display.setFont(monofonto_20ptFontInfo);   
       display.fontColor(TS_8b_White,TS_8b_Black);
       display.setCursor(0,0);
       display.print("Patrick");
@@ -264,7 +264,7 @@ void display_Altitude(double altitude) {
    if ( coef>1) coef=1;
 
    // Print current lower Y value
-   display.setFont(arial_6ptFontInfo);
+   display.setFont(monofonto_6ptFontInfo);
    display.fontColor(TS_8b_Blue,TS_8b_Black);
    display.setCursor(0,52);
    display.print(Ymin);
@@ -285,7 +285,7 @@ void display_Altitude(double altitude) {
 
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Temperature(double temperature) {
-   display.setFont(arial_20ptFontInfo);  
+   display.setFont(monofonto_20ptFontInfo);  
    display.fontColor(TS_8b_White,TS_8b_Black);
    display.setCursor(10,20);
    display.print(String(temperature)+" °c");
@@ -376,7 +376,7 @@ void store_data(double altitude, double temperature, char * filename) {
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Battery(int batteryLevel) {
    display.clearScreen();
-   display.setFont(arial_20ptFontInfo);   
+   display.setFont(monofonto_20ptFontInfo);   
    display.fontColor(TS_8b_White,TS_8b_Black);
    display.setCursor(10,20);
    display.print(String((float(batteryLevel)/100)));
