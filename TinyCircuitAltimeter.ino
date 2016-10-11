@@ -42,6 +42,7 @@ unsigned char clignote;
 #define MAX_YEAR  2100
 
 
+void Brightness(void);
 void display_Altitude(double altitude);              // Print Altitude on tinyScreen
 void display_Temperature(double temperature);        // Print temperature on tinyScreen
 void display_Time(void);                             // Print temperature on tinyScreen
@@ -106,20 +107,6 @@ void loop()
   
   while ( ( millis() - loopTick ) < loopDuration ) {
     delay(1);
-    if (display.getButtons(TSButtonLowerLeft)) {
-      if (brightness>0) brightness--;
-      display.setBrightness(brightness);
-      delay(500);
-      break;
-    }  
-    
-    if (display.getButtons(TSButtonUpperLeft)) {
-      if (brightness<16) brightness++;
-      display.setBrightness(brightness);
-      delay(500);
-      break;
-    }  
-
     if (display.getButtons(TSButtonLowerRight)) {
       screen--;
       while(display.getButtons(TSButtonLowerRight));
@@ -169,6 +156,7 @@ void loop()
       display_Altitude(bmp.readAltitude(P0));
       store_data(bmp.readAltitude(P0), bmp.readTemperature(), SD_FileName);
       loopDuration = 1000;
+      Brightness();
     break;
 
     case STATE_DISPLAY_TEMPERATURE:
@@ -238,7 +226,18 @@ void loop()
 
 
 
-
+//--------------------------------------------------------------------------------------------------------------------------------
+void Brightness() {
+    if (display.getButtons(TSButtonLowerLeft)) {
+      if (brightness>0) brightness--;
+      display.setBrightness(brightness);
+    }  
+    
+    if (display.getButtons(TSButtonUpperLeft)) {
+      if (brightness<16) brightness++;
+      display.setBrightness(brightness);
+    }  
+}
 
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Altitude(double altitude) {
