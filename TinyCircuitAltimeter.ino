@@ -4,7 +4,18 @@
 #include <TimeLib.h>
 #include <TinyScreen.h>
 TinyScreen display = TinyScreen(TinyScreenPlus);
-#include "monofonto.h"
+
+
+
+#include "LucidaGrande.h"
+#include "LucidaGrandeBold.h"
+#define FONT_6pts lucidaGrande_6ptFontInfo
+#define FONT_10pts lucidaGrande_10ptFontInfo
+#define FONT_12pts lucidaGrande_12ptFontInfo
+#define FONT_20pts lucidaGrande_20ptFontInfo
+#define FONT_10ptsBold lucidaGrandeBold_10ptFontInfo
+#define FONT_12ptsBold lucidaGrandeBold_12ptFontInfo
+#define FONT_20ptsBold lucidaGrandeBold_20ptFontInfo
 
 // BMP280 definitions
 Adafruit_BMP280 bmp; 
@@ -53,7 +64,6 @@ int read_Battery(void);
 unsigned updown(unsigned int val, unsigned int max);
 
 
-
 //--------------------------------------------------------------------------------------------------------------------------------
 void setup()
 {
@@ -67,7 +77,7 @@ void setup()
 
   display.setFlip(true);
   display.clearScreen();
-  display.setFont(monofonto_10ptFontInfo);   
+  display.setFont(FONT_10pts);   
   display.fontColor(TS_8b_Blue,TS_8b_Black);
 
   if(!bmp.begin()){
@@ -142,7 +152,7 @@ void loop()
     case -1: // Startup
 //      display.drawBitmap(0, 0, Splash, 128, 64, WHITE);
 //      display.display();
-      display.setFont(monofonto_20ptFontInfo);   
+      display.setFont(FONT_20ptsBold);   
       display.fontColor(TS_8b_White,TS_8b_Black);
       display.setCursor(0,0);
       display.print("Patrick");
@@ -241,7 +251,7 @@ void Brightness() {
 
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Altitude(double altitude) {
-   display.setFont(liberationSans_12ptFontInfo);   
+   display.setFont(FONT_12ptsBold);   
    display.fontColor(TS_8b_White,TS_8b_Black);
    display.setCursor(28,0);
    display.print(String(altitude));
@@ -264,7 +274,7 @@ void display_Altitude(double altitude) {
    if ( coef>1) coef=1;
 
    // Print current lower Y value
-   display.setFont(monofonto_6ptFontInfo);
+   display.setFont(FONT_6pts);
    display.fontColor(TS_8b_Blue,TS_8b_Black);
    display.setCursor(0,52);
    display.print(Ymin);
@@ -285,7 +295,7 @@ void display_Altitude(double altitude) {
 
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Temperature(double temperature) {
-   display.setFont(monofonto_20ptFontInfo);  
+   display.setFont(FONT_20ptsBold);  
    display.fontColor(TS_8b_White,TS_8b_Black);
    display.setCursor(10,20);
    display.print(String(temperature)+" °c");
@@ -299,7 +309,7 @@ void display_Temperature(double temperature) {
 void display_Time() {
     char buffer[3];
 
-    display.setFont(  liberationSans_12ptFontInfo  );   
+    display.setFont(FONT_12pts );   
     display.fontColor(TS_8b_White,TS_8b_Black);
     display.setCursor(0,30);
 
@@ -376,7 +386,7 @@ void store_data(double altitude, double temperature, char * filename) {
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Battery(int batteryLevel) {
    display.clearScreen();
-   display.setFont(monofonto_20ptFontInfo);   
+   display.setFont(FONT_20ptsBold);   
    display.fontColor(TS_8b_White,TS_8b_Black);
    display.setCursor(10,20);
    display.print(String((float(batteryLevel)/100)));
