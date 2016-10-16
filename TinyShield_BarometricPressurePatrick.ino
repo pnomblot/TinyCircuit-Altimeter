@@ -6,7 +6,6 @@
 TinyScreen display = TinyScreen(TinyScreenPlus);
 
 
-
 #include "LucidaGrande.h"
 #include "LucidaGrandeBold.h"
 #define FONT_4pts lucidaGrande_4ptFontInfo
@@ -39,7 +38,8 @@ Adafruit_BMP280 bmp;
 
 // Altimeter settings
 #define XMAX  96
-#define YMAX  64
+#define YMAX  40
+#define OFFSET_Y  20
 
 
 // BATTERY LEVEL 
@@ -48,7 +48,7 @@ Adafruit_BMP280 bmp;
 #define BAT_HEIGHT  4
 #define BAT_LENGTH  9
 
-int rotatingBuffer[XMAX];
+float rotatingBuffer[XMAX];
 unsigned char rotatingBufferIndex=0 ;
 int screen=-1;
 int brightness=10;
@@ -268,7 +268,7 @@ void display_Altitude(double altitude) {
    display.print(String(altitude));
  
    // store Altitude value in rotating buffer
-   rotatingBuffer[rotatingBufferIndex] = int(altitude);
+   rotatingBuffer[rotatingBufferIndex] = altitude;
    rotatingBufferIndex = (rotatingBufferIndex + 1)%XMAX;
    int Ymin=int(altitude);
    int Ymax=int(altitude);
@@ -277,26 +277,33 @@ void display_Altitude(double altitude) {
      if (rotatingBuffer[i] < Ymin) Ymin=rotatingBuffer[i];
    }
 
-   Ymin = Ymin -(Ymin%10);
-   Ymax = Ymax -(Ymax%10) +10;
+   unsigned int modulo = 10;
+   Ymin--;
+   Ymax++;
+   if ((Ymax - Ymin) >200 ) modulo = 100;
+   Ymin = Ymin -(Ymin%modulo);
+   Ymax = Ymax -(Ymax%modulo) + modulo;
    
    // normalize
    float coef = YMAX/(Ymax-Ymin);
-   if ( coef>1) coef=1;
+   //if ( coef>1) coef=1;
 
    // Print current lower Y value
    display.setFont(FONT_6pts);
    display.fontColor(TS_8b_Blue,TS_8b_Black);
-   display.setCursor(0,52);
+   display.setCursor(0,OFFSET_Y+YMAX-8);
    display.print(Ymin);
 
    // Print current higher Y value (if needed)
-   display.setCursor(0,10);
+   display.setCursor(0,OFFSET_Y-8);
    display.print(Ymax);
-   
+
+   display.drawLine(0,OFFSET_Y + YMAX,95,OFFSET_Y + YMAX,TS_8b_Red);
+   display.drawLine(0,OFFSET_Y + (YMAX)-( coef*(Ymax-Ymin) ),95,OFFSET_Y + (YMAX)-( coef*(Ymax-Ymin) ),TS_8b_Green);
+
    // draw curve from buffer values
    for (int i=0; i<XMAX; i++) { 
-    display.drawPixel(i, (YMAX)-( coef*(rotatingBuffer[(rotatingBufferIndex+i)%XMAX]-Ymin) ), TS_8b_Blue);
+    display.drawPixel(i, OFFSET_Y + (YMAX)-( coef*(rotatingBuffer[(rotatingBufferIndex+i)%XMAX]-Ymin) ), TS_8b_Blue);
    }
    display.writePixel(TS_8b_Blue);
 }
@@ -444,7 +451,6 @@ int read_Battery(void) {
   while (ADC->STATUS.bit.SYNCBUSY == 1);
   SYSCTRL->VREF.reg &= ~SYSCTRL_VREF_BGOUTEN;
   result = (((1100L * 1024L) / valueRead) + 5L) / 10L;
-  SerialUSB.println(result);
   return(result);
 }
 
