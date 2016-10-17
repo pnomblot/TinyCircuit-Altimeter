@@ -277,9 +277,10 @@ void display_Altitude(double altitude) {
      if (rotatingBuffer[i] < Ymin) Ymin=rotatingBuffer[i];
    }
 
-   unsigned int modulo = 10;
+   unsigned int modulo = 1;
    Ymin--;
    Ymax++;
+   if ((Ymax - Ymin) >YMAX ) modulo = 10;
    if ((Ymax - Ymin) >200 ) modulo = 100;
    Ymin = Ymin -(Ymin%modulo);
    Ymax = Ymax -(Ymax%modulo) + modulo;
