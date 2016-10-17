@@ -41,6 +41,8 @@ Adafruit_BMP280 bmp;
 #define YMAX  40
 #define OFFSET_Y  20
 
+#define MIN_LINE_COLOR  TS_8b_DarkGreen
+#define MAX_LINE_COLOR  TS_8b_Brown
 
 // BATTERY LEVEL 
 #define BAT_X_POS  82
@@ -299,8 +301,8 @@ void display_Altitude(double altitude) {
    display.setCursor(0,OFFSET_Y-8);
    display.print(Ymax);
 
-   display.drawLine(0,OFFSET_Y + YMAX,95,OFFSET_Y + YMAX,TS_8b_Red);
-   display.drawLine(0,OFFSET_Y + (YMAX)-( coef*(Ymax-Ymin) ),95,OFFSET_Y + (YMAX)-( coef*(Ymax-Ymin) ),TS_8b_Green);
+   display.drawLine(0,OFFSET_Y + YMAX,95,OFFSET_Y + YMAX, MIN_LINE_COLOR);
+   display.drawLine(0,OFFSET_Y + (YMAX)-( coef*(Ymax-Ymin) ),95,OFFSET_Y + (YMAX)-( coef*(Ymax-Ymin) ), MAX_LINE_COLOR);
 
    // draw curve from buffer values
    for (int i=0; i<XMAX; i++) { 
