@@ -29,7 +29,7 @@ TinyScreen display = TinyScreen(TinyScreenPlus);
 
 // BMP280 definitions
 Adafruit_BMP280 bmp; 
-#define P0 1013.25
+float P0=1013.25;
 
 // SD Card 
 #define SD_chipSelect 10
@@ -67,10 +67,11 @@ unsigned char clignote;
 
 
 void Brightness(void);
-void display_Altitude(double altitude);              // Print Altitude on tinyScreen
-void display_Temperature(double temperature);        // Print temperature on tinyScreen
-void display_Time(void);                             // Print temperature on tinyScreen
-void store_data(double altitude, double temperature, char * filename); // Store Altitude and temperature on SD CARD
+void display_Altitude(float altitude);               // Print Altitude 
+void draw_Altitude(float altitude);                 // draw altitude graph 
+void display_Temperature(float temperature);         // Print temperature 
+void display_Time(void);                             // Print temperature 
+void store_data(float altitude, float temperature, char * filename); // Store Altitude and temperature on SD CARD
 void display_Battery(int batteryLevel);
 void draw_Battery(int batteryLevel);
 int read_Battery(void);
@@ -103,6 +104,7 @@ void setup()
 
   // Initialize curve values
   for (int i=0; i<XMAX; i++) { 
+      delay(20);
      rotatingBuffer[i] = (int)bmp.readAltitude(P0);
   }
 
@@ -127,6 +129,7 @@ void setup()
 //--------------------------------------------------------------------------------------------------------------------------------
 void loop()
 {
+  float a;
   
   while ( ( millis() - loopTick ) < loopDuration ) {
     delay(1);
@@ -147,16 +150,17 @@ void loop()
   loopTick =  millis();
   ++clignote;
 
-  #define STATE_DISPLAY_ALTITUDE 0
-  #define STATE_DISPLAY_TEMPERATURE 1
-  #define STATE_DISPLAY_BATTERY 2
-  #define STATE_DISPLAY_TIME 3
-  #define STATE_SETTING_HOUR 4
-  #define STATE_SETTING_MINUTE 5
-  #define STATE_SETTING_SECOND 6
-  #define STATE_SETTING_DAY 7
-  #define STATE_SETTING_MONTH 8
-  #define STATE_SETTING_YEAR 9
+  #define STATE_SETTING_ALTITUDE 0
+  #define STATE_DISPLAY_ALTITUDE 1
+  #define STATE_DISPLAY_TEMPERATURE 2
+  #define STATE_DISPLAY_BATTERY 3
+  #define STATE_DISPLAY_TIME 4
+  #define STATE_SETTING_HOUR 5
+  #define STATE_SETTING_MINUTE 6
+  #define STATE_SETTING_SECOND 7
+  #define STATE_SETTING_DAY 8
+  #define STATE_SETTING_MONTH 9
+  #define STATE_SETTING_YEAR 10
 
 
   display.clearScreen(); 
@@ -169,14 +173,21 @@ void loop()
       display.fontColor(TS_8b_White,TS_8b_Black);
       display.setCursor(0,0);
       display.print("Patrick");
-      ++screen;
+      screen = STATE_DISPLAY_ALTITUDE;
       loopDuration = 1000;
-  
+    break;
+
+    case STATE_SETTING_ALTITUDE:
+      display_Setting_Altitude(P0, bmp.readAltitude(P0));
+      loopDuration = 150;
+      SET_P0();
     break;
 
     case STATE_DISPLAY_ALTITUDE:
+      a = bmp.readAltitude(P0);
+      display_Altitude(a);
       draw_Battery(read_Battery());
-      display_Altitude(bmp.readAltitude(P0));
+      draw_Altitude(a);
       store_data(bmp.readAltitude(P0), bmp.readTemperature(), SD_FileName);
       loopDuration = 1000;
       Brightness();
@@ -263,12 +274,26 @@ void Brightness() {
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------
-void display_Altitude(double altitude) {
+void SET_P0() {
+    if (display.getButtons(TSButtonLowerLeft)) {
+      if (P0>0) P0-=0.01;
+    }  
+    
+    if (display.getButtons(TSButtonUpperLeft)) {
+      if (P0<2000) P0+=0.01;
+    }  
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+void display_Altitude(float altitude) {
    display.setFont(FONT_12ptsBold);   
    display.fontColor(TS_8b_White,TS_8b_Black);
    display.setCursor(28,0);
    display.print(String(altitude));
+}
  
+//--------------------------------------------------------------------------------------------------------------------------------
+void draw_Altitude(float altitude) {
    // store Altitude value in rotating buffer
    rotatingBuffer[rotatingBufferIndex] = altitude;
    rotatingBufferIndex = (rotatingBufferIndex + 1)%XMAX;
@@ -289,7 +314,6 @@ void display_Altitude(double altitude) {
    
    // normalize
    float coef = YMAX/(Ymax-Ymin);
-   //if ( coef>1) coef=1;
 
    // Print current lower Y value
    display.setFont(FONT_6pts);
@@ -301,8 +325,9 @@ void display_Altitude(double altitude) {
    display.setCursor(0,OFFSET_Y-8);
    display.print(Ymax);
 
-   display.drawLine(0,OFFSET_Y + YMAX,95,OFFSET_Y + YMAX, MIN_LINE_COLOR);
-   display.drawLine(0,OFFSET_Y + (YMAX)-( coef*(Ymax-Ymin) ),95,OFFSET_Y + (YMAX)-( coef*(Ymax-Ymin) ), MAX_LINE_COLOR);
+//   display.drawLine(0,OFFSET_Y + (YMAX)-( coef*(Ymax-Ymin) ),95,OFFSET_Y + (YMAX)-( coef*(Ymax-Ymin) ), MAX_LINE_COLOR);
+   display.drawLine(0,OFFSET_Y       , XMAX,OFFSET_Y       , MAX_LINE_COLOR);
+   display.drawLine(0,OFFSET_Y + YMAX, XMAX,OFFSET_Y + YMAX, MIN_LINE_COLOR);
 
    // draw curve from buffer values
    for (int i=0; i<XMAX; i++) { 
@@ -315,13 +340,28 @@ void display_Altitude(double altitude) {
 
 
 //--------------------------------------------------------------------------------------------------------------------------------
-void display_Temperature(double temperature) {
-   display.setFont(FONT_20ptsBold);  
+void display_Setting_Altitude(float p, float altitude) {
+   display.setFont(FONT_12ptsBold);  
    display.fontColor(TS_8b_White,TS_8b_Black);
-   display.setCursor(10,20);
-   display.print(String(temperature)+" °c");
+   display.setCursor(0,10);
+   display.print(String(p));
+   display.print(" mb");
+
+   display.fontColor(TS_8b_Blue,TS_8b_Black);
+   display.setCursor(0,40);
+   display.print(String(altitude));
+   display.print(" m");
+ 
 }
    
+
+//--------------------------------------------------------------------------------------------------------------------------------
+void display_Temperature(float temperature) {
+   display.setFont(FONT_20ptsBold);  
+   display.fontColor(TS_8b_White,TS_8b_Black);
+   display.setCursor(0,20);
+   display.print(String(temperature)+" °c");
+}
 
 
 
@@ -387,7 +427,7 @@ unsigned int updown(unsigned int val, unsigned int max) {
 
 
 //--------------------------------------------------------------------------------------------------------------------------------
-void store_data(double altitude, double temperature, char * filename) {
+void store_data(float altitude, float temperature, char * filename) {
   char buffer[35];
   sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d %0.2f %0.2f", year(),month(),day(),hour(),minute(),second(), altitude, temperature);
   SerialUSB.println(buffer);
@@ -406,7 +446,6 @@ void store_data(double altitude, double temperature, char * filename) {
 
 //--------------------------------------------------------------------------------------------------------------------------------
 void display_Battery(int batteryLevel) {
-   display.clearScreen();
    display.setFont(FONT_20ptsBold);   
    display.fontColor(TS_8b_White,TS_8b_Black);
    display.setCursor(10,20);
