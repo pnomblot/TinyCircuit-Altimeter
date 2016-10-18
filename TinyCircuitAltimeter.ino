@@ -30,6 +30,9 @@ TinyScreen display = TinyScreen(TinyScreenPlus);
 // BMP280 definitions
 Adafruit_BMP280 bmp; 
 float P0=1013.25;
+unsigned int samples;
+unsigned int sampling=1;
+float average;
 
 // SD Card 
 #define SD_chipSelect 10
@@ -66,9 +69,12 @@ unsigned char clignote;
 #define MAX_YEAR  2100
 
 
+void SET_P0(void);
+void SET_Sampling(void);
+void display_Setting_Sampling(void); 
 void Brightness(void);
 void display_Altitude(float altitude);               // Print Altitude 
-void draw_Altitude(float altitude);                 // draw altitude graph 
+void draw_Altitude();                                // draw altitude graph 
 void display_Temperature(float temperature);         // Print temperature 
 void display_Time(void);                             // Print temperature 
 void store_data(float altitude, float temperature, char * filename); // Store Altitude and temperature on SD CARD
@@ -102,10 +108,11 @@ void setup()
     while(1);
   }
 
+  average = bmp.readAltitude(P0);
   // Initialize curve values
   for (int i=0; i<XMAX; i++) { 
       delay(20);
-     rotatingBuffer[i] = (int)bmp.readAltitude(P0);
+     rotatingBuffer[i] = average;
   }
 
   //while (!Serial); // Wait for USB Serial to be ready 
@@ -122,7 +129,6 @@ void setup()
 //  setTime(0, 0, 0, 16, 2, 2016);
   SerialUSB.println("Starting");
   loopTick =  millis();
-
 }
 
 
@@ -151,16 +157,17 @@ void loop()
   ++clignote;
 
   #define STATE_SETTING_ALTITUDE 0
-  #define STATE_DISPLAY_ALTITUDE 1
-  #define STATE_DISPLAY_TEMPERATURE 2
-  #define STATE_DISPLAY_BATTERY 3
-  #define STATE_DISPLAY_TIME 4
-  #define STATE_SETTING_HOUR 5
-  #define STATE_SETTING_MINUTE 6
-  #define STATE_SETTING_SECOND 7
-  #define STATE_SETTING_DAY 8
-  #define STATE_SETTING_MONTH 9
-  #define STATE_SETTING_YEAR 10
+  #define STATE_SETTING_SAMPLING_RATE 1
+  #define STATE_DISPLAY_ALTITUDE 2
+  #define STATE_DISPLAY_TEMPERATURE 3
+  #define STATE_DISPLAY_BATTERY 4
+  #define STATE_DISPLAY_TIME 5
+  #define STATE_SETTING_HOUR 6
+  #define STATE_SETTING_MINUTE 7
+  #define STATE_SETTING_SECOND 8
+  #define STATE_SETTING_DAY 9
+  #define STATE_SETTING_MONTH 10
+  #define STATE_SETTING_YEAR 11
 
 
   display.clearScreen(); 
@@ -177,18 +184,32 @@ void loop()
       loopDuration = 1000;
     break;
 
+    case STATE_SETTING_SAMPLING_RATE:
+      display_Setting_Sampling();
+      loopDuration = 150;
+      SET_Sampling();
+    break;
+
     case STATE_SETTING_ALTITUDE:
       display_Setting_Altitude(P0, bmp.readAltitude(P0));
       loopDuration = 150;
       SET_P0();
     break;
 
-    case STATE_DISPLAY_ALTITUDE:
+    case STATE_DISPLAY_ALTITUDE:      
       a = bmp.readAltitude(P0);
       display_Altitude(a);
       draw_Battery(read_Battery());
-      draw_Altitude(a);
-      store_data(bmp.readAltitude(P0), bmp.readTemperature(), SD_FileName);
+      if ( ++samples>= sampling) {
+         samples = 0;
+         rotatingBuffer[rotatingBufferIndex] = average/sampling;
+         rotatingBufferIndex = (rotatingBufferIndex + 1)%XMAX;
+         store_data(average/sampling, bmp.readTemperature(), SD_FileName);
+         average = a;
+      } else {
+              average += a;
+      }
+      draw_Altitude();
       loopDuration = 1000;
       Brightness();
     break;
@@ -285,6 +306,17 @@ void SET_P0() {
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------
+void SET_Sampling() {
+    if (display.getButtons(TSButtonLowerLeft)) {
+      if (sampling>1) sampling--;
+    }  
+    
+    if (display.getButtons(TSButtonUpperLeft)) {
+      if (sampling<60*60) sampling++;
+    }  
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
 void display_Altitude(float altitude) {
    display.setFont(FONT_12ptsBold);   
    display.fontColor(TS_8b_White,TS_8b_Black);
@@ -293,27 +325,23 @@ void display_Altitude(float altitude) {
 }
  
 //--------------------------------------------------------------------------------------------------------------------------------
-void draw_Altitude(float altitude) {
-   // store Altitude value in rotating buffer
-   rotatingBuffer[rotatingBufferIndex] = altitude;
-   rotatingBufferIndex = (rotatingBufferIndex + 1)%XMAX;
-   int Ymin=int(altitude);
-   int Ymax=int(altitude);
+void draw_Altitude() {
+   int Ymin=int(rotatingBuffer[0]);
+   int Ymax=Ymin;
+   
    for (int i=0; i<XMAX; i++) { 
      if (rotatingBuffer[i] > Ymax) Ymax=rotatingBuffer[i];
      if (rotatingBuffer[i] < Ymin) Ymin=rotatingBuffer[i];
    }
-
+   
    unsigned int modulo = 1;
-   Ymin--;
-   Ymax++;
    if ((Ymax - Ymin) >YMAX ) modulo = 10;
    if ((Ymax - Ymin) >200 ) modulo = 100;
    Ymin = Ymin -(Ymin%modulo);
    Ymax = Ymax -(Ymax%modulo) + modulo;
    
    // normalize
-   float coef = YMAX/(Ymax-Ymin);
+   float coef = YMAX/float(Ymax-Ymin);
 
    // Print current lower Y value
    display.setFont(FONT_6pts);
@@ -325,13 +353,12 @@ void draw_Altitude(float altitude) {
    display.setCursor(0,OFFSET_Y-8);
    display.print(Ymax);
 
-//   display.drawLine(0,OFFSET_Y + (YMAX)-( coef*(Ymax-Ymin) ),95,OFFSET_Y + (YMAX)-( coef*(Ymax-Ymin) ), MAX_LINE_COLOR);
    display.drawLine(0,OFFSET_Y       , XMAX,OFFSET_Y       , MAX_LINE_COLOR);
    display.drawLine(0,OFFSET_Y + YMAX, XMAX,OFFSET_Y + YMAX, MIN_LINE_COLOR);
 
    // draw curve from buffer values
    for (int i=0; i<XMAX; i++) { 
-    display.drawPixel(i, OFFSET_Y + (YMAX)-( coef*(rotatingBuffer[(rotatingBufferIndex+i)%XMAX]-Ymin) ), TS_8b_Blue);
+    display.drawPixel(i, OFFSET_Y + YMAX - (coef*(rotatingBuffer[(rotatingBufferIndex+i)%XMAX]-Ymin) ), TS_8b_Blue);
    }
    display.writePixel(TS_8b_Blue);
 }
@@ -351,6 +378,15 @@ void display_Setting_Altitude(float p, float altitude) {
    display.setCursor(0,40);
    display.print(String(altitude));
    display.print(" m");
+ 
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void display_Setting_Sampling() {
+   display.setFont(FONT_12ptsBold);  
+   display.fontColor(TS_8b_White,TS_8b_Black);
+   display.setCursor(0,10);
+   display.print(String(sampling));
+   display.print(" s");
  
 }
    
