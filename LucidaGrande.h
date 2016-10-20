@@ -1,3 +1,15 @@
+#define FONT_4pts lucidaGrande_4ptFontInfo
+#define FONT_5pts lucidaGrande_5ptFontInfo
+#define FONT_6pts lucidaGrande_6ptFontInfo
+#define FONT_7pts lucidaGrande_7ptFontInfo
+#define FONT_8pts lucidaGrande_8ptFontInfo
+#define FONT_10pts lucidaGrande_10ptFontInfo
+#define FONT_12pts lucidaGrande_12ptFontInfo
+#define FONT_14pts lucidaGrande_14ptFontInfo
+#define FONT_16pts lucidaGrande_16ptFontInfo
+#define FONT_18pts lucidaGrande_18ptFontInfo
+#define FONT_20pts lucidaGrande_20ptFontInfo
+
 /* 
 **  Font data for Lucida Grande 4pt
 */
