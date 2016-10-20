@@ -5,27 +5,9 @@
 #include <TinyScreen.h>
 TinyScreen display = TinyScreen(TinyScreenPlus);
 
-
 #include "LucidaGrande.h"
 #include "LucidaGrandeBold.h"
-#define FONT_4pts lucidaGrande_4ptFontInfo
-#define FONT_5pts lucidaGrande_5ptFontInfo
-#define FONT_6pts lucidaGrande_6ptFontInfo
-#define FONT_7pts lucidaGrande_7ptFontInfo
-#define FONT_8pts lucidaGrande_8ptFontInfo
-#define FONT_10pts lucidaGrande_10ptFontInfo
-#define FONT_12pts lucidaGrande_12ptFontInfo
-#define FONT_14pts lucidaGrande_14ptFontInfo
-#define FONT_16pts lucidaGrande_16ptFontInfo
-#define FONT_18pts lucidaGrande_18ptFontInfo
-#define FONT_20pts lucidaGrande_20ptFontInfo
-#define FONT_8ptsBold lucidaGrandeBold_8ptFontInfo
-#define FONT_10ptsBold lucidaGrandeBold_10ptFontInfo
-#define FONT_12ptsBold lucidaGrandeBold_12ptFontInfo
-#define FONT_14ptsBold lucidaGrandeBold_14ptFontInfo
-#define FONT_16ptsBold lucidaGrandeBold_16ptFontInfo
-#define FONT_18ptsBold lucidaGrandeBold_18ptFontInfo
-#define FONT_20ptsBold lucidaGrandeBold_20ptFontInfo
+
 
 // BMP280 definitions
 Adafruit_BMP280 bmp; 
@@ -36,7 +18,6 @@ float average;
 
 // SD Card 
 #define SD_chipSelect 10
-#define SD_FileName "alti.csv"
 
 
 // Altimeter settings
@@ -108,10 +89,11 @@ void setup()
     while(1);
   }
 
+
+  delay(200);
   average = bmp.readAltitude(P0);
   // Initialize curve values
   for (int i=0; i<XMAX; i++) { 
-      delay(20);
      rotatingBuffer[i] = average;
   }
 
@@ -204,7 +186,7 @@ void loop()
          samples = 0;
          rotatingBuffer[rotatingBufferIndex] = average/sampling;
          rotatingBufferIndex = (rotatingBufferIndex + 1)%XMAX;
-         store_data(average/sampling, bmp.readTemperature(), SD_FileName);
+         store_data(average/sampling, bmp.readTemperature());
          average = a;
       } else {
               average += a;
@@ -463,14 +445,19 @@ unsigned int updown(unsigned int val, unsigned int max) {
 
 
 //--------------------------------------------------------------------------------------------------------------------------------
-void store_data(float altitude, float temperature, char * filename) {
-  char buffer[35];
+void store_data(float altitude, float temperature) {
+  char buffer[40];
+  char filename[13];
   sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d %0.2f %0.2f", year(),month(),day(),hour(),minute(),second(), altitude, temperature);
+  sprintf(filename, "%02d%02d%04d.csv", day(),month(),year());
   SerialUSB.println(buffer);
 
-  File file = SD.open(filename, FILE_WRITE);
+
+//  File file = SD.open(filename, FILE_WRITE);
+  File file = SD.open(filename, O_CREAT | O_WRITE | O_APPEND);
   if (file) {
     file.println(buffer);
+    file.flush();
     file.close();
     SerialUSB.println("Altitude stored.");
   } else {
