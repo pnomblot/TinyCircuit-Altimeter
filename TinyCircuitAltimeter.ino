@@ -1,15 +1,17 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
 #include <SD.h>
-#include <TimeLib.h>
+#include <RTCZero.h>
 #include <TinyScreen.h>
 TinyScreen display = TinyScreen(TinyScreenPlus);
+
+//https://www.hackster.io/jkoger/simple-watch-using-rtc-59e635
 
 #include "LucidaGrande.h"
 #include "LucidaGrandeBold.h"
 
+RTCZero rtc;
 
-// BMP280 definitions
 Adafruit_BMP280 bmp; 
 float P0=1013.25;
 unsigned int samples;
@@ -70,7 +72,6 @@ void setup()
 {
   SerialUSB.begin(9600);
 //   while (!SerialUSB); // wait for serial port to connect.
-  setTime(07,42,00,9,3,2016);    //values in the order hr,min,sec,day,month,year
 
   Wire.begin();
   display.begin();
@@ -89,7 +90,7 @@ void setup()
     while(1);
   }
 
-
+  rtc.begin(); 
   delay(200);
   average = bmp.readAltitude(P0);
   // Initialize curve values
@@ -108,7 +109,9 @@ void setup()
     SerialUSB.println("SD CARD OK !");
   }
 
-//  setTime(0, 0, 0, 16, 2, 2016);
+  //rtc.setTime(hours, minutes, seconds);
+  rtc.setDate(31, 10, 16);
+
   SerialUSB.println("Starting");
   loopTick =  millis();
 }
@@ -216,38 +219,38 @@ void loop()
 
 
     case STATE_SETTING_HOUR:
-      setTime(updown(hour(), MAX_HOUR), minute(), second(), day(), month(), year());
+      rtc.setHours(updown(rtc.getHours(), MAX_HOUR));
       display_Time();
       loopDuration = time_setting_tick;
     break;
 
     case STATE_SETTING_MINUTE:
-      setTime(hour(), updown(minute(), MAX_MINUTE), second(), day(), month(), year());
+      rtc.setMinutes(updown(rtc.getMinutes(), MAX_MINUTE));
       display_Time();
       loopDuration = time_setting_tick;
     break;
 
     case STATE_SETTING_SECOND:
-      setTime(hour(), minute(), updown(second(), MAX_SECOND), day(), month(), year());
+      rtc.setSeconds(updown(rtc.getSeconds(), MAX_SECOND));
       display_Time();
       loopDuration = time_setting_tick;
     break;
 
     case STATE_SETTING_DAY:
-      setTime(hour(), minute(), second(), updown(day(), MAX_DAY), month(), year());
+      rtc.setDay(updown(rtc.getDay(), MAX_DAY));
       display_Time();
       loopDuration = time_setting_tick;
     break;
 
     case STATE_SETTING_MONTH:
-      setTime(hour(), minute(), second(), day(), updown(month(), MAX_MONTH), year());
+      rtc.setMonth(updown(rtc.getMonth(), MAX_MONTH));
       display_Time();
       loopDuration = time_setting_tick;
     break;
 
 
     case STATE_SETTING_YEAR:
-      setTime(hour(), minute(), second(), day(), month(), updown(year(), MAX_YEAR));
+      rtc.setYear(updown(rtc.getYear(), MAX_YEAR));
       display_Time();
       loopDuration = time_setting_tick;
     break;
@@ -394,42 +397,42 @@ void display_Time() {
 
 
     if ((clignote%2) && (screen == STATE_SETTING_DAY))  display.fontColor(TS_8b_Black, TS_8b_White);
-    sprintf(buffer, "%02d", day());
+    sprintf(buffer, "%02d", rtc.getDay());
     display.print(buffer);
 
     display.fontColor(TS_8b_White,TS_8b_Black);
     display.print("/");
 
     if ((clignote%2) && (screen == STATE_SETTING_MONTH))  display.fontColor(TS_8b_Black, TS_8b_White);
-    sprintf(buffer, "%02d", month());
+    sprintf(buffer, "%02d", rtc.getMonth());
     display.print(buffer);
 
     display.fontColor(TS_8b_White,TS_8b_Black);
     display.print("/");
 
     if ((clignote%2) && (screen == STATE_SETTING_YEAR))  display.fontColor(TS_8b_Black, TS_8b_White);
-    sprintf(buffer, "%02d", year());
+    sprintf(buffer, "%02d", rtc.getYear());
     display.print(buffer);
 
     display.fontColor(TS_8b_White,TS_8b_Black);
     display.setCursor(0,0);
 
     if ((clignote%2) && (screen == STATE_SETTING_HOUR))  display.fontColor(TS_8b_Black, TS_8b_White);
-    sprintf(buffer, "%02d", hour());
+    sprintf(buffer, "%02d", rtc.getHours());
     display.print(buffer);
 
     display.fontColor(TS_8b_White,TS_8b_Black);
     display.print(':');
 
     if ((clignote%2) && (screen == STATE_SETTING_MINUTE))  display.fontColor(TS_8b_Black, TS_8b_White);
-    sprintf(buffer, "%02d", minute());
+    sprintf(buffer, "%02d", rtc.getMinutes());
     display.print(buffer);
 
     display.fontColor(TS_8b_White,TS_8b_Black);
     display.print(':');
 
     if ((clignote%2) && (screen == STATE_SETTING_SECOND))  display.fontColor(TS_8b_Black, TS_8b_White);
-    sprintf(buffer, "%02d", second());
+    sprintf(buffer, "%02d", rtc.getSeconds());
     display.print(buffer);
     display.fontColor(TS_8b_White,TS_8b_Black);
 }
@@ -448,8 +451,8 @@ unsigned int updown(unsigned int val, unsigned int max) {
 void store_data(float altitude, float temperature) {
   char buffer[40];
   char filename[13];
-  sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d %0.2f %0.2f", year(),month(),day(),hour(),minute(),second(), altitude, temperature);
-  sprintf(filename, "%02d%02d%04d.csv", day(),month(),year());
+  sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d %0.2f %0.2f", rtc.getYear(),rtc.getMonth(),rtc.getDay(),rtc.getHours(),rtc.getMinutes(),rtc.getSeconds(), altitude, temperature);
+  sprintf(filename, "%02d%02d%04d.csv", rtc.getDay(),rtc.getMonth(),rtc.getYear());
   SerialUSB.println(buffer);
 
 
